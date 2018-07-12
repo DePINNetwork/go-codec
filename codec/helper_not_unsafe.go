@@ -57,11 +57,11 @@ func i2rtid(i interface{}) uintptr {
 
 // --------------------------
 
-func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool) bool {
+func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool, omitEmptyArray bool) bool {
 	switch v.Kind() {
 	case reflect.Invalid:
 		return true
-	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+	case reflect.Map, reflect.Slice, reflect.String:
 		return v.Len() == 0
 	case reflect.Bool:
 		return !v.Bool()
@@ -76,11 +76,22 @@ func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool) b
 			if v.IsNil() {
 				return true
 			}
-			return isEmptyValue(v.Elem(), tinfos, deref, checkStruct)
+			return isEmptyValue(v.Elem(), tinfos, deref, checkStruct, omitEmptyArray)
 		}
 		return v.IsNil()
 	case reflect.Struct:
-		return isEmptyStruct(v, tinfos, deref, checkStruct)
+		return isEmptyStruct(v, tinfos, deref, checkStruct, omitEmptyArray)
+	case reflect.Array:
+		if omitEmptyArray {
+			for i := 0; i < v.Len(); i++ {
+				if !isEmptyValue(v.Index(i), tinfos, deref, checkStruct, omitEmptyArray) {
+					return false
+				}
+			}
+			return true
+		} else {
+			return v.Len() == 0
+		}
 	}
 	return false
 }

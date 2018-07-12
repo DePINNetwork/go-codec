@@ -756,14 +756,14 @@ func (e *Encoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 		// kv.r = si.field(rv, false)
 		kv.r = sfn.field(si)
 		if toMap {
-			if si.omitEmpty() && isEmptyValue(kv.r, e.h.TypeInfos, recur, recur) {
+			if si.omitEmpty() && isEmptyValue(kv.r, e.h.TypeInfos, recur, recur, si.omitEmptyArray()) {
 				continue
 			}
 			kv.v = si // si.encName
 		} else {
 			// use the zero value.
 			// if a reference or struct, set to nil (so you do not output too much)
-			if si.omitEmpty() && isEmptyValue(kv.r, e.h.TypeInfos, recur, recur) {
+			if si.omitEmpty() && isEmptyValue(kv.r, e.h.TypeInfos, recur, recur, si.omitEmptyArray()) {
 				switch kv.r.Kind() {
 				case reflect.Struct, reflect.Interface, reflect.Ptr,
 					reflect.Array, reflect.Map, reflect.Slice:
@@ -782,7 +782,7 @@ func (e *Encoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 			delete(mf, k)
 			continue
 		}
-		if fti.infoFieldOmitempty && isEmptyValue(reflect.ValueOf(v), e.h.TypeInfos, recur, recur) {
+		if fti.infoFieldOmitempty && isEmptyValue(reflect.ValueOf(v), e.h.TypeInfos, recur, recur, fti.infoFieldOmitemptyarray) {
 			delete(mf, k)
 			continue
 		}

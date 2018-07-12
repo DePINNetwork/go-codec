@@ -107,7 +107,7 @@ func i2rtid(i interface{}) uintptr {
 
 // --------------------------
 
-func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool) bool {
+func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool, omitEmptyArray bool) bool {
 	urv := (*unsafeReflectValue)(unsafe.Pointer(&v))
 	if urv.flag == 0 {
 		return true
@@ -153,7 +153,7 @@ func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool) b
 			if isnil {
 				return true
 			}
-			return isEmptyValue(v.Elem(), tinfos, deref, checkStruct)
+			return isEmptyValue(v.Elem(), tinfos, deref, checkStruct, omitEmptyArray)
 		}
 		return isnil
 	case reflect.Ptr:
@@ -163,13 +163,24 @@ func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool) b
 			if isnil {
 				return true
 			}
-			return isEmptyValue(v.Elem(), tinfos, deref, checkStruct)
+			return isEmptyValue(v.Elem(), tinfos, deref, checkStruct, omitEmptyArray)
 		}
 		return isnil
 	case reflect.Struct:
-		return isEmptyStruct(v, tinfos, deref, checkStruct)
-	case reflect.Map, reflect.Array, reflect.Chan:
+		return isEmptyStruct(v, tinfos, deref, checkStruct, omitEmptyArray)
+	case reflect.Map, reflect.Chan:
 		return v.Len() == 0
+	case reflect.Array:
+		if omitEmptyArray {
+			for i := 0; i < v.Len(); i++ {
+				if !isEmptyValue(v.Index(i), tinfos, deref, checkStruct, omitEmptyArray) {
+					return false
+				}
+			}
+			return true
+		} else {
+			return v.Len() == 0
+		}
 	}
 	return false
 }

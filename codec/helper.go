@@ -1169,6 +1169,7 @@ const (
 	_ structFieldInfoFlag = 1 << iota
 	structFieldInfoFlagReady
 	structFieldInfoFlagOmitEmpty
+	structFieldInfoFlagOmitEmptyArray
 )
 
 func (x *structFieldInfoFlag) flagSet(f structFieldInfoFlag) {
@@ -1185,6 +1186,10 @@ func (x structFieldInfoFlag) flagGet(f structFieldInfoFlag) bool {
 
 func (x structFieldInfoFlag) omitEmpty() bool {
 	return x.flagGet(structFieldInfoFlagOmitEmpty)
+}
+
+func (x structFieldInfoFlag) omitEmptyArray() bool {
+	return x.flagGet(structFieldInfoFlagOmitEmptyArray)
 }
 
 func (x structFieldInfoFlag) ready() bool {
@@ -1231,7 +1236,7 @@ func (si *structFieldInfo) field(v reflect.Value, update bool) (rv2 reflect.Valu
 // 	return v
 // }
 
-func parseStructInfo(stag string) (toArray, omitEmpty bool, keytype valueType) {
+func parseStructInfo(stag string) (toArray, omitEmpty bool, omitEmptyArray bool, keytype valueType) {
 	keytype = valueTypeString // default
 	if stag == "" {
 		return
@@ -1242,6 +1247,8 @@ func parseStructInfo(stag string) (toArray, omitEmpty bool, keytype valueType) {
 			switch s {
 			case "omitempty":
 				omitEmpty = true
+			case "omitemptyarray":
+				omitEmptyArray = true
 			case "toarray":
 				toArray = true
 			case "int":
@@ -1278,6 +1285,8 @@ func (si *structFieldInfo) parseTag(stag string) {
 			case "omitempty":
 				si.flagSet(structFieldInfoFlagOmitEmpty)
 				// si.omitEmpty = true
+			case "omitemptyarray":
+				si.flagSet(structFieldInfoFlagOmitEmptyArray)
 				// case "toarray":
 				// 	si.toArray = true
 			}
@@ -1445,8 +1454,9 @@ type typeInfo struct {
 	mfp bool // *T is a MissingFielder
 
 	// other flags, with individual bits representing if set.
-	flags              typeInfoFlag
-	infoFieldOmitempty bool
+	flags                   typeInfoFlag
+	infoFieldOmitempty      bool
+	infoFieldOmitemptyarray bool
 
 	_ [6]byte   // padding
 	_ [2]uint64 // padding
@@ -1591,9 +1601,11 @@ func (x *TypeInfos) get(rtid uintptr, rt reflect.Type) (pti *typeInfo) {
 	switch rk {
 	case reflect.Struct:
 		var omitEmpty bool
+		var omitEmptyArray bool
 		if f, ok := rt.FieldByName(structInfoFieldName); ok {
-			ti.toArray, omitEmpty, ti.keyType = parseStructInfo(x.structTag(f.Tag))
+			ti.toArray, omitEmpty, omitEmptyArray, ti.keyType = parseStructInfo(x.structTag(f.Tag))
 			ti.infoFieldOmitempty = omitEmpty
+			ti.infoFieldOmitemptyarray = omitEmptyArray
 		} else {
 			ti.keyType = valueTypeString
 		}
@@ -1602,7 +1614,7 @@ func (x *TypeInfos) get(rtid uintptr, rt reflect.Type) (pti *typeInfo) {
 		pv.etypes[0] = ti.rtid
 		// vv := typeInfoLoad{pv.fNames[:0], pv.encNames[:0], pv.etypes[:1], pv.sfis[:0]}
 		vv := typeInfoLoad{pv.etypes[:1], pv.sfis[:0]}
-		x.rget(rt, rtid, omitEmpty, nil, &vv)
+		x.rget(rt, rtid, omitEmpty, omitEmptyArray, nil, &vv)
 		// ti.sfis = vv.sfis
 		ti.sfiSrc, ti.sfiSort, ti.sfiNamesSort, ti.anyOmitEmpty = rgetResolveSFI(rt, vv.sfis, pv)
 		pp.Put(pi)
@@ -1643,7 +1655,7 @@ func (x *TypeInfos) get(rtid uintptr, rt reflect.Type) (pti *typeInfo) {
 	return
 }
 
-func (x *TypeInfos) rget(rt reflect.Type, rtid uintptr, omitEmpty bool,
+func (x *TypeInfos) rget(rt reflect.Type, rtid uintptr, omitEmpty bool, omitEmptyArray bool,
 	indexstack []uint16, pv *typeInfoLoad) {
 	// Read up fields and store how to access the value.
 	//
@@ -1728,7 +1740,7 @@ LOOP:
 					copy(indexstack2, indexstack)
 					indexstack2[len(indexstack)] = j
 					// indexstack2 := append(append(make([]int, 0, len(indexstack)+4), indexstack...), j)
-					x.rget(ft, ftid, omitEmpty, indexstack2, pv)
+					x.rget(ft, ftid, omitEmpty, omitEmptyArray, indexstack2, pv)
 				}
 				continue
 			}
@@ -1778,6 +1790,9 @@ LOOP:
 
 		if omitEmpty {
 			si.flagSet(structFieldInfoFlagOmitEmpty)
+		}
+		if omitEmptyArray {
+			si.flagSet(structFieldInfoFlagOmitEmptyArray)
 		}
 		pv.sfis = append(pv.sfis, si)
 	}
@@ -1907,7 +1922,7 @@ func implIntf(rt, iTyp reflect.Type) (base bool, indir bool) {
 //    - is it comparable, and can i compare directly using ==
 //    - if checkStruct, then walk through the encodable fields
 //      and check if they are empty or not.
-func isEmptyStruct(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool) bool {
+func isEmptyStruct(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool, omitEmptyArray bool) bool {
 	// v is a struct kind - no need to check again.
 	// We only check isZero on a struct kind, to reduce the amount of times
 	// that we lookup the rtid and typeInfo for each type as we walk the tree.
@@ -1937,7 +1952,7 @@ func isEmptyStruct(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool) 
 	// so that is what we use to check omitEmpty.
 	for _, si := range ti.sfiSrc {
 		sfv, valid := si.field(v, false)
-		if valid && !isEmptyValue(sfv, tinfos, deref, checkStruct) {
+		if valid && !isEmptyValue(sfv, tinfos, deref, checkStruct, omitEmptyArray) {
 			return false
 		}
 	}

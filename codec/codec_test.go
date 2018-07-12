@@ -2448,6 +2448,26 @@ func doTestMultipleEncDec(t *testing.T, name string, h Handle) {
 	testDeepEqualErr(s2, s21, t, name+"-multiple-encode")
 }
 
+func doTestOmitemptyarray(t *testing.T, name string, h Handle) {
+	testOnce.Do(testInitAll)
+	if h.getBasicHandle().StructToArray {
+		t.Skipf("Skipping OmitEmptyArray test when StructToArray=true")
+	}
+	type T1 struct {
+		A int     `codec:"a"`
+		B *[4]int `codec:"b,omitempty,omitemptyarray"`
+		C [4]int  `codec:"c,omitempty,omitemptyarray"`
+	}
+	type T2 struct {
+		A int `codec:"a"`
+	}
+	var v1 T1
+	var v2 T2
+	b1 := testMarshalErr(v1, h, t, name+"-omitemptyarray")
+	b2 := testMarshalErr(v2, h, t, name+"-no-omitemptyarray-trunc")
+	testDeepEqualErr(b1, b2, t, name+"-omitemptyarray-cmp")
+}
+
 // -----------------
 
 func TestJsonDecodeNonStringScalarInStringContext(t *testing.T) {
@@ -3175,6 +3195,26 @@ func TestBincOmitempty(t *testing.T) {
 
 func TestSimpleOmitempty(t *testing.T) {
 	doTestOmitempty(t, "simple", testSimpleH)
+}
+
+func TestJsonOmitemptyarray(t *testing.T) {
+	doTestOmitemptyarray(t, "json", testJsonH)
+}
+
+func TestCborOmitemptyarray(t *testing.T) {
+	doTestOmitemptyarray(t, "cbor", testCborH)
+}
+
+func TestMsgpackOmitemptyarray(t *testing.T) {
+	doTestOmitemptyarray(t, "msgpack", testMsgpackH)
+}
+
+func TestBincOmitemptyarray(t *testing.T) {
+	doTestOmitemptyarray(t, "binc", testBincH)
+}
+
+func TestSimpleOmitemptyarray(t *testing.T) {
+	doTestOmitemptyarray(t, "simple", testSimpleH)
 }
 
 func TestJsonIntfMapping(t *testing.T) {
