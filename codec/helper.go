@@ -1633,6 +1633,7 @@ func (x *TypeInfos) get(rtid uintptr, rt reflect.Type) (pti *typeInfo) {
 	// sfi = sfiSrc
 
 	x.mu.Lock()
+	defer x.mu.Unlock()
 	sp = x.infos.load()
 	var sp2 []rtid2ti
 	if sp == nil {
@@ -1651,7 +1652,6 @@ func (x *TypeInfos) get(rtid uintptr, rt reflect.Type) (pti *typeInfo) {
 			x.infos.store(sp2)
 		}
 	}
-	x.mu.Unlock()
 	return
 }
 
