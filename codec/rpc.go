@@ -30,10 +30,11 @@ type RPCOptions struct {
 
 // rpcCodec defines the struct members and common methods.
 type rpcCodec struct {
-	c io.Closer
-	r io.Reader
-	w io.Writer
-	f ioFlusher
+	c    io.Closer
+	r    io.Reader
+	w    io.Writer
+	f    ioFlusher
+	rpcf rpcFlusher
 
 	dec *Decoder
 	enc *Encoder
@@ -54,6 +55,10 @@ func newRPCCodec2(r io.Reader, w io.Writer, c io.Closer, h Handle) rpcCodec {
 	if jsonH, ok := h.(*JsonHandle); ok && !jsonH.TermWhitespace {
 		panic(errRpcJsonNeedsTermWhitespace)
 	}
+
+	// Use an RPC flusher to signal when the entire RPC request is sent.
+	rpcf, _ := w.(rpcFlusher)
+
 	// always ensure that we use a flusher, and always flush what was written to the connection.
 	// we lose nothing by using a buffered writer internally.
 	f, ok := w.(ioFlusher)
@@ -75,13 +80,14 @@ func newRPCCodec2(r io.Reader, w io.Writer, c io.Closer, h Handle) rpcCodec {
 		}
 	}
 	return rpcCodec{
-		c:   c,
-		w:   w,
-		r:   r,
-		f:   f,
-		h:   h,
-		enc: NewEncoder(w, h),
-		dec: NewDecoder(r, h),
+		c:    c,
+		w:    w,
+		r:    r,
+		f:    f,
+		rpcf: rpcf,
+		h:    h,
+		enc:  NewEncoder(w, h),
+		dec:  NewDecoder(r, h),
 	}
 }
 
@@ -104,8 +110,14 @@ func (c *rpcCodec) write(obj1, obj2 interface{}, writeObj2 bool) (err error) {
 	if c.f != nil {
 		if err == nil {
 			err = c.f.Flush()
+			if err == nil && c.rpcf != nil {
+				err = c.rpcf.RPCFlush()
+			}
 		} else {
 			_ = c.f.Flush() // swallow flush error, so we maintain prior error on write
+			if c.rpcf != nil {
+				c.rpcf.RPCFlush()
+			}
 		}
 	}
 	return

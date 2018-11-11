@@ -2130,6 +2130,10 @@ type ioFlusher interface {
 	Flush() error
 }
 
+type rpcFlusher interface {
+	RPCFlush() error
+}
+
 type ioPeeker interface {
 	Peek(int) ([]byte, error)
 }
