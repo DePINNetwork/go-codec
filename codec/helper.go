@@ -1458,7 +1458,7 @@ type typeInfo struct {
 	infoFieldOmitempty      bool
 	infoFieldOmitemptyarray bool
 
-	_ [6]byte   // padding
+	_ [5]byte   // padding
 	_ [2]uint64 // padding
 }
 
