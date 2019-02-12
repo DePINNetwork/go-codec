@@ -173,6 +173,17 @@ func isEmptyValue(v reflect.Value, tinfos *TypeInfos, deref, checkStruct bool, o
 	case reflect.Array:
 		vlen := v.Len()
 		if omitEmptyArray {
+			// Special case for byte arrays
+			if v.Type().Elem().Kind() == reflect.Uint8 {
+				for i := 0; i < vlen; i++ {
+					iptr := unsafe.Pointer(uintptr(urv.ptr) + uintptr(i))
+					if *(*uint8)(iptr) != 0 {
+						return false
+					}
+				}
+				return true
+			}
+
 			for i := 0; i < vlen; i++ {
 				if !isEmptyValue(v.Index(i), tinfos, deref, checkStruct, omitEmptyArray) {
 					return false
