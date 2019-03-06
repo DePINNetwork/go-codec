@@ -20442,7 +20442,7 @@ func (x *TestMammoth2) codecDecodeSelfFromMap(l int, d *Decoder) {
 			}
 		}
 		r.ReadMapElemKey()
-		yys3 := z.StringView(r.DecodeStringAsBytes())
+		yys3 := z.StringView(r.DecodeStringAsBytes(0))
 		r.ReadMapElemValue()
 		switch yys3 {
 		case "FIntf":
@@ -20473,7 +20473,7 @@ func (x *TestMammoth2) codecDecodeSelfFromMap(l int, d *Decoder) {
 			if r.TryDecodeAsNil() {
 				x.FString = ""
 			} else {
-				x.FString = (string)(r.DecodeString())
+				x.FString = (string)(r.DecodeString(0))
 			}
 		case "FptrString":
 			if r.TryDecodeAsNil() {
@@ -20487,7 +20487,7 @@ func (x *TestMammoth2) codecDecodeSelfFromMap(l int, d *Decoder) {
 
 				if false {
 				} else {
-					*x.FptrString = (string)(r.DecodeString())
+					*x.FptrString = (string)(r.DecodeString(0))
 				}
 			}
 		case "FFloat32":
@@ -20910,7 +20910,7 @@ func (x *TestMammoth2) codecDecodeSelfFromMap(l int, d *Decoder) {
 			} else {
 				if false {
 				} else {
-					x.FSliceUint8 = r.DecodeBytes(([]byte)(x.FSliceUint8), false)
+					x.FSliceUint8 = r.DecodeBytes(([]byte)(x.FSliceUint8), false, 0)
 				}
 			}
 		case "FptrSliceUint8":
@@ -20925,7 +20925,7 @@ func (x *TestMammoth2) codecDecodeSelfFromMap(l int, d *Decoder) {
 
 				if false {
 				} else {
-					*x.FptrSliceUint8 = r.DecodeBytes(*(*[]byte)(x.FptrSliceUint8), false)
+					*x.FptrSliceUint8 = r.DecodeBytes(*(*[]byte)(x.FptrSliceUint8), false, 0)
 				}
 			}
 		case "FSliceUint16":
@@ -27384,7 +27384,7 @@ func (x *TestMammoth2) codecDecodeSelfFromArray(l int, d *Decoder) {
 	if r.TryDecodeAsNil() {
 		x.FString = ""
 	} else {
-		x.FString = (string)(r.DecodeString())
+		x.FString = (string)(r.DecodeString(0))
 	}
 	yyj1141++
 	if yyhl1141 {
@@ -27408,7 +27408,7 @@ func (x *TestMammoth2) codecDecodeSelfFromArray(l int, d *Decoder) {
 
 		if false {
 		} else {
-			*x.FptrString = (string)(r.DecodeString())
+			*x.FptrString = (string)(r.DecodeString(0))
 		}
 	}
 	yyj1141++
@@ -28221,7 +28221,7 @@ func (x *TestMammoth2) codecDecodeSelfFromArray(l int, d *Decoder) {
 	} else {
 		if false {
 		} else {
-			x.FSliceUint8 = r.DecodeBytes(([]byte)(x.FSliceUint8), false)
+			x.FSliceUint8 = r.DecodeBytes(([]byte)(x.FSliceUint8), false, 0)
 		}
 	}
 	yyj1141++
@@ -28246,7 +28246,7 @@ func (x *TestMammoth2) codecDecodeSelfFromArray(l int, d *Decoder) {
 
 		if false {
 		} else {
-			*x.FptrSliceUint8 = r.DecodeBytes(*(*[]byte)(x.FptrSliceUint8), false)
+			*x.FptrSliceUint8 = r.DecodeBytes(*(*[]byte)(x.FptrSliceUint8), false, 0)
 		}
 	}
 	yyj1141++
@@ -40299,7 +40299,7 @@ func (x *TestMammoth2Wrapper) codecDecodeSelfFromMap(l int, d *Decoder) {
 			}
 		}
 		r.ReadMapElemKey()
-		yys3 := z.StringView(r.DecodeStringAsBytes())
+		yys3 := z.StringView(r.DecodeStringAsBytes(0))
 		r.ReadMapElemValue()
 		switch yys3 {
 		case "V":
