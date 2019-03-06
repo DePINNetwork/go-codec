@@ -183,7 +183,6 @@ func (d *Decoder) raw(f *codecFnInfo, rv reflect.Value) {
 }
 
 func (d *Decoder) kString(f *codecFnInfo, rv reflect.Value) {
-	fmt.Printf("maxj string\n")
 	rv.SetString(d.d.DecodeString())
 }
 

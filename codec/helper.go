@@ -642,8 +642,6 @@ func (x *BasicHandle) fn(rt reflect.Type, checkFastpath, checkCodecSelfer bool) 
 
 	rk := reflect.Kind(ti.kind)
 
-	fmt.Printf("maxj foo: %+v\n", fi)
-
 	if checkCodecSelfer && (ti.cs || ti.csp) {
 		fn.fe = (*Encoder).selferMarshal
 		fn.fd = (*Decoder).selferUnmarshal

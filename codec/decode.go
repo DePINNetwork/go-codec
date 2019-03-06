@@ -1571,6 +1571,12 @@ func (d *Decoder) kSlice(f *codecFnInfo, rv reflect.Value) {
 		return
 	}
 
+	// If the container type is too long, bail out now
+	maxLen := int(f.ti.maxLen)
+	if maxLen > 0 && containerLenS > maxLen {
+		d.errorf("container len exceeded maxlen: %v > %v", containerLenS, maxLen)
+	}
+
 	d.depthIncr()
 
 	rtelem0Size := int(rtelem0.Size())
@@ -2768,7 +2774,6 @@ func (d *Decoder) decode(iv interface{}) {
 }
 
 func (d *Decoder) decodeValue(rv reflect.Value, maxLen uint64, fn *codecFn, chkAll bool) {
-	// fmt.Printf("maxj %v maxLen: %v %v\n", rv.Type(), maxLen, d.h.fn)
 	// If stream is not containing a nil value, then we can deref to the base
 	// non-pointer value, and decode into that.
 	var rvp reflect.Value
