@@ -23,8 +23,8 @@ const (
 const (
 	decDefMaxDepth         = 1024 // maximum depth
 	decDefSliceCap         = 8
-	decDefChanCap          = 64 // should be large, as cap cannot be expanded
-	maxFieldNameLen        = 1024 // maximum name of a struct field key
+	decDefChanCap          = 64            // should be large, as cap cannot be expanded
+	maxFieldNameLen        = 1024          // maximum name of a struct field key
 	decScratchByteArrayLen = cacheLineSize // + (8 * 2) // - (8 * 1)
 )
 
