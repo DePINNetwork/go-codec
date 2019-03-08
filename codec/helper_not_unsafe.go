@@ -6,7 +6,6 @@
 package codec
 
 import (
-	"fmt"
 	"reflect"
 	"sync/atomic"
 	"time"
