@@ -520,14 +520,14 @@ func (d *msgpackDecDriver) DecodeNaked() {
 		case bd == mpStr8, bd == mpStr16, bd == mpStr32, bd >= mpFixStrMin && bd <= mpFixStrMax:
 			if d.h.RawToString {
 				n.v = valueTypeString
-				n.s = d.DecodeString()
+				n.s = d.DecodeString(0)
 			} else {
 				n.v = valueTypeBytes
-				n.l = d.DecodeBytes(nil, false)
+				n.l = d.DecodeBytes(nil, false, 0)
 			}
 		case bd == mpBin8, bd == mpBin16, bd == mpBin32:
 			n.v = valueTypeBytes
-			n.l = d.DecodeBytes(nil, false)
+			n.l = d.DecodeBytes(nil, false, 0)
 		case bd == mpArray16, bd == mpArray32, bd >= mpFixArrayMin && bd <= mpFixArrayMax:
 			n.v = valueTypeArray
 			decodeFurther = true
@@ -687,7 +687,7 @@ func (d *msgpackDecDriver) DecodeBool() (b bool) {
 	return
 }
 
-func (d *msgpackDecDriver) DecodeBytes(bs []byte, zerocopy bool) (bsOut []byte) {
+func (d *msgpackDecDriver) DecodeBytes(bs []byte, zerocopy bool, maxLen uint64) (bsOut []byte) {
 	if !d.bdRead {
 		d.readNextBd()
 	}
@@ -718,6 +718,10 @@ func (d *msgpackDecDriver) DecodeBytes(bs []byte, zerocopy bool) (bsOut []byte) 
 		return
 	}
 
+	if maxLen > 0 && clen > int(maxLen) {
+		d.d.errorf("container len exceeded maxlen: %v > %v", clen, maxLen)
+	}
+
 	// these are (bin|str)(8|16|32)
 	d.bdRead = false
 	// bytes may be nil, so handle it. if nil, clen=-1.
@@ -734,12 +738,12 @@ func (d *msgpackDecDriver) DecodeBytes(bs []byte, zerocopy bool) (bsOut []byte) 
 	return decByteSlice(d.r, clen, d.h.MaxInitLen, bs)
 }
 
-func (d *msgpackDecDriver) DecodeString() (s string) {
-	return string(d.DecodeBytes(d.d.b[:], true))
+func (d *msgpackDecDriver) DecodeString(maxLen uint64) (s string) {
+	return string(d.DecodeBytes(d.d.b[:], true, maxLen))
 }
 
-func (d *msgpackDecDriver) DecodeStringAsBytes() (s []byte) {
-	return d.DecodeBytes(d.d.b[:], true)
+func (d *msgpackDecDriver) DecodeStringAsBytes(maxLen uint64) (s []byte) {
+	return d.DecodeBytes(d.d.b[:], true, maxLen)
 }
 
 func (d *msgpackDecDriver) readNextBd() {
@@ -925,10 +929,10 @@ func (d *msgpackDecDriver) decodeExtV(verifyTag bool, tag byte) (xtag byte, xbs 
 	}
 	xbd := d.bd
 	if xbd == mpBin8 || xbd == mpBin16 || xbd == mpBin32 {
-		xbs = d.DecodeBytes(nil, true)
+		xbs = d.DecodeBytes(nil, true, 0)
 	} else if xbd == mpStr8 || xbd == mpStr16 || xbd == mpStr32 ||
 		(xbd >= mpFixStrMin && xbd <= mpFixStrMax) {
-		xbs = d.DecodeStringAsBytes()
+		xbs = d.DecodeStringAsBytes(0)
 	} else {
 		clen := d.readExtLen()
 		xtag = d.r.readn1()

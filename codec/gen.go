@@ -1380,7 +1380,7 @@ func (x *genRunner) dec(varname string, t reflect.Type, isptr bool) {
 		// - if elements are primitives or Selfers, call dedicated function on each member.
 		// - else call Encoder.encode(XXX) on it.
 		if rtid == uint8SliceTypId {
-			x.linef("%s%s = r.DecodeBytes(%s(%s[]byte)(%s), false)",
+			x.linef("%s%s = r.DecodeBytes(%s(%s[]byte)(%s), false, 0)",
 				ptrPfx, varname, ptrPfx, ptrPfx, varname)
 		} else if fastpathAV.index(rtid) != -1 {
 			g := x.newGenV(t)
@@ -1465,7 +1465,7 @@ func (x *genRunner) decTryAssignPrimitive(varname string, t reflect.Type, isptr 
 	case reflect.Bool:
 		x.linef("%s%s = (%s)(r.DecodeBool())", ptr, varname, x.genTypeName(t))
 	case reflect.String:
-		x.linef("%s%s = (%s)(r.DecodeString())", ptr, varname, x.genTypeName(t))
+		x.linef("%s%s = (%s)(r.DecodeString(0))", ptr, varname, x.genTypeName(t))
 	default:
 		return false
 	}
@@ -1474,11 +1474,11 @@ func (x *genRunner) decTryAssignPrimitive(varname string, t reflect.Type, isptr 
 
 func (x *genRunner) decListFallback(varname string, rtid uintptr, t reflect.Type) {
 	if t.AssignableTo(uint8SliceTyp) {
-		x.line("*" + varname + " = r.DecodeBytes(*((*[]byte)(" + varname + ")), false)")
+		x.line("*" + varname + " = r.DecodeBytes(*((*[]byte)(" + varname + ")), false, 0)")
 		return
 	}
 	if t.Kind() == reflect.Array && t.Elem().Kind() == reflect.Uint8 {
-		x.linef("r.DecodeBytes( ((*[%d]byte)(%s))[:], true)", t.Len(), varname)
+		x.linef("r.DecodeBytes( ((*[%d]byte)(%s))[:], true, 0)", t.Len(), varname)
 		return
 	}
 	type tstruc struct {
@@ -1622,7 +1622,7 @@ func (x *genRunner) decStructMap(varname, lenvarname string, rtid uintptr, t ref
 	case valueTypeFloat:
 		x.linef("%s := z.StringView(strconv.AppendFloat(z.DecScratchArrayBuffer()[:0], r.DecodeFloat64(), 'f', -1, 64))", kName)
 	default: // string
-		x.linef("%s := z.StringView(r.DecodeStringAsBytes())", kName)
+		x.linef("%s := z.StringView(r.DecodeStringAsBytes(0))", kName)
 	}
 	// x.linef("%s := z.StringView(r.DecStructFieldKey(codecSelferValueType%s%s, z.DecScratchArrayBuffer()))", kName, ti.keyType.String(), x.xs)
 
@@ -1977,7 +1977,7 @@ func genInternalDecCommandAsString(s string) string {
 		return "dd.DecodeInt64()"
 
 	case "string":
-		return "dd.DecodeString()"
+		return "dd.DecodeString(0)"
 	case "float32":
 		return "float32(chkOvf.Float32V(dd.DecodeFloat64()))"
 	case "float64":

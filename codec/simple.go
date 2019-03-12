@@ -430,15 +430,15 @@ func (d *simpleDecDriver) decLen() int {
 	return -1
 }
 
-func (d *simpleDecDriver) DecodeString() (s string) {
-	return string(d.DecodeBytes(d.d.b[:], true))
+func (d *simpleDecDriver) DecodeString(maxLen uint64) (s string) {
+	return string(d.DecodeBytes(d.d.b[:], true, maxLen))
 }
 
-func (d *simpleDecDriver) DecodeStringAsBytes() (s []byte) {
-	return d.DecodeBytes(d.d.b[:], true)
+func (d *simpleDecDriver) DecodeStringAsBytes(maxLen uint64) (s []byte) {
+	return d.DecodeBytes(d.d.b[:], true, maxLen)
 }
 
-func (d *simpleDecDriver) DecodeBytes(bs []byte, zerocopy bool) (bsOut []byte) {
+func (d *simpleDecDriver) DecodeBytes(bs []byte, zerocopy bool, maxLen uint64) (bsOut []byte) {
 	if !d.bdRead {
 		d.readNextBd()
 	}
@@ -524,7 +524,7 @@ func (d *simpleDecDriver) decodeExtV(verifyTag bool, tag byte) (xtag byte, xbs [
 		}
 	case simpleVdByteArray, simpleVdByteArray + 1,
 		simpleVdByteArray + 2, simpleVdByteArray + 3, simpleVdByteArray + 4:
-		xbs = d.DecodeBytes(nil, true)
+		xbs = d.DecodeBytes(nil, true, 0)
 	default:
 		d.d.errorf("ext - %s - expecting extensions/bytearray, got: 0x%x", msgBadDesc, d.bd)
 		return
@@ -573,11 +573,11 @@ func (d *simpleDecDriver) DecodeNaked() {
 	case simpleVdString, simpleVdString + 1,
 		simpleVdString + 2, simpleVdString + 3, simpleVdString + 4:
 		n.v = valueTypeString
-		n.s = d.DecodeString()
+		n.s = d.DecodeString(0)
 	case simpleVdByteArray, simpleVdByteArray + 1,
 		simpleVdByteArray + 2, simpleVdByteArray + 3, simpleVdByteArray + 4:
 		n.v = valueTypeBytes
-		n.l = d.DecodeBytes(nil, false)
+		n.l = d.DecodeBytes(nil, false, 0)
 	case simpleVdExt, simpleVdExt + 1, simpleVdExt + 2, simpleVdExt + 3, simpleVdExt + 4:
 		n.v = valueTypeExt
 		l := d.decLen()

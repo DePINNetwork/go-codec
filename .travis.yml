@@ -8,6 +8,4 @@ go:
     - 1.11.x
     - tip
 script:
-    - go test -tags "alltests" -run Suite -coverprofile coverage.txt github.com/ugorji/go/codec
-after_success:
-    - bash <(curl -s https://codecov.io/bash)
+    - go test -tags "alltests" -run Suite -coverprofile coverage.txt github.com/algorand/go-codec/codec

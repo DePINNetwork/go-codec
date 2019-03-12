@@ -1199,6 +1199,7 @@ func (x structFieldInfoFlag) ready() bool {
 type structFieldInfo struct {
 	encName   string // encode name
 	fieldName string // field name
+	maxLen    uint64 // maximum field length
 
 	is  [maxLevelsEmbedding]uint16 // (recursive/embedded) field index in struct
 	nis uint8                      // num levels of embedding. if 1, then it's not embedded.
@@ -1275,6 +1276,8 @@ func (si *structFieldInfo) parseTag(stag string) {
 	if stag == "" {
 		return
 	}
+
+	var err error
 	for i, s := range strings.Split(stag, ",") {
 		if i == 0 {
 			if s != "" {
@@ -1289,6 +1292,17 @@ func (si *structFieldInfo) parseTag(stag string) {
 				si.flagSet(structFieldInfoFlagOmitEmptyArray)
 				// case "toarray":
 				// 	si.toArray = true
+			default:
+				if strings.HasPrefix(s, "maxlen") {
+					split := strings.SplitN(s, ":", 2)
+					if len(split) != 2 {
+						continue
+					}
+					si.maxLen, err = strconv.ParseUint(split[1], 10, 64)
+					if err != nil {
+						continue
+					}
+				}
 			}
 		}
 	}
@@ -1414,6 +1428,7 @@ type typeInfo struct {
 	rtid uintptr
 	// rv0  reflect.Value // saved zero value, used if immutableKind
 
+	maxLen  uint64 // maximum num els for slices/strings
 	numMeth uint16 // number of methods
 	kind    uint8
 	chandir uint8

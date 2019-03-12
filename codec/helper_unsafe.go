@@ -335,7 +335,7 @@ func (d *Decoder) raw(f *codecFnInfo, rv reflect.Value) {
 
 func (d *Decoder) kString(f *codecFnInfo, rv reflect.Value) {
 	urv := (*unsafeReflectValue)(unsafe.Pointer(&rv))
-	*(*string)(urv.ptr) = d.d.DecodeString()
+	*(*string)(urv.ptr) = d.d.DecodeString(f.ti.maxLen)
 }
 
 func (d *Decoder) kBool(f *codecFnInfo, rv reflect.Value) {

@@ -784,7 +784,7 @@ func (d *bincDecDriver) decStringAndBytes(bs []byte, withString, zerocopy bool) 
 	return
 }
 
-func (d *bincDecDriver) DecodeString() (s string) {
+func (d *bincDecDriver) DecodeString(maxLen uint64) (s string) {
 	// DecodeBytes does not accommodate symbols, whose impl stores string version in map.
 	// Use decStringAndBytes directly.
 	// return string(d.DecodeBytes(d.b[:], true, true))
@@ -792,12 +792,12 @@ func (d *bincDecDriver) DecodeString() (s string) {
 	return
 }
 
-func (d *bincDecDriver) DecodeStringAsBytes() (s []byte) {
+func (d *bincDecDriver) DecodeStringAsBytes(maxLen uint64) (s []byte) {
 	s, _ = d.decStringAndBytes(d.b[:], false, true)
 	return
 }
 
-func (d *bincDecDriver) DecodeBytes(bs []byte, zerocopy bool) (bsOut []byte) {
+func (d *bincDecDriver) DecodeBytes(bs []byte, zerocopy bool, maxLen uint64) (bsOut []byte) {
 	if !d.bdRead {
 		d.readNextBd()
 	}
@@ -862,7 +862,7 @@ func (d *bincDecDriver) decodeExtV(verifyTag bool, tag byte) (xtag byte, xbs []b
 			xbs = decByteSlice(d.r, l, d.d.h.MaxInitLen, d.d.b[:])
 		}
 	} else if d.vd == bincVdByteArray {
-		xbs = d.DecodeBytes(nil, true)
+		xbs = d.DecodeBytes(nil, true, 0)
 	} else {
 		d.d.errorf("ext - expecting extensions or byte array - %s %x-%x/%s",
 			msgBadDesc, d.vd, d.vs, bincdesc(d.vd, d.vs))
@@ -927,13 +927,13 @@ func (d *bincDecDriver) DecodeNaked() {
 		n.f = d.decFloat()
 	case bincVdSymbol:
 		n.v = valueTypeSymbol
-		n.s = d.DecodeString()
+		n.s = d.DecodeString(0)
 	case bincVdString:
 		n.v = valueTypeString
-		n.s = d.DecodeString()
+		n.s = d.DecodeString(0)
 	case bincVdByteArray:
 		n.v = valueTypeBytes
-		n.l = d.DecodeBytes(nil, false)
+		n.l = d.DecodeBytes(nil, false, 0)
 	case bincVdTimestamp:
 		n.v = valueTypeTime
 		tt, err := bincDecodeTime(d.r.readx(uint(d.vs)))
