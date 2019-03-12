@@ -237,7 +237,7 @@ func (f genHelperDecoder) DecFallback(iv interface{}, chkPtr bool) {
 	if chkPtr {
 		rv = f.d.ensureDecodeable(rv)
 	}
-	f.d.decodeValue(rv, 0, nil, false)
+	f.d.decodeValue(rv, nil, false)
 	// f.d.decodeValueFallback(rv)
 }
 
@@ -258,7 +258,7 @@ func (f genHelperDecoder) DecArrayCannotExpand(sliceLen, streamLen int) {
 
 // FOR USE BY CODECGEN ONLY. IT *WILL* CHANGE WITHOUT NOTICE. *DO NOT USE*
 func (f genHelperDecoder) DecTextUnmarshal(tm encoding.TextUnmarshaler) {
-	fnerr := tm.UnmarshalText(f.d.d.DecodeStringAsBytes(0))
+	fnerr := tm.UnmarshalText(f.d.d.DecodeStringAsBytes())
 	if fnerr != nil {
 		panic(fnerr)
 	}
@@ -266,7 +266,7 @@ func (f genHelperDecoder) DecTextUnmarshal(tm encoding.TextUnmarshaler) {
 
 // FOR USE BY CODECGEN ONLY. IT *WILL* CHANGE WITHOUT NOTICE. *DO NOT USE*
 func (f genHelperDecoder) DecJSONUnmarshal(tm jsonUnmarshaler) {
-	// bs := f.dd.DecodeStringAsBytes(0)
+	// bs := f.dd.DecodeStringAsBytes()
 	// grab the bytes to be read, as UnmarshalJSON needs the full JSON so as to unmarshal it itself.
 	fnerr := tm.UnmarshalJSON(f.d.nextValueBytes())
 	if fnerr != nil {
@@ -276,7 +276,7 @@ func (f genHelperDecoder) DecJSONUnmarshal(tm jsonUnmarshaler) {
 
 // FOR USE BY CODECGEN ONLY. IT *WILL* CHANGE WITHOUT NOTICE. *DO NOT USE*
 func (f genHelperDecoder) DecBinaryUnmarshal(bm encoding.BinaryUnmarshaler) {
-	fnerr := bm.UnmarshalBinary(f.d.d.DecodeBytes(nil, true, 0))
+	fnerr := bm.UnmarshalBinary(f.d.d.DecodeBytes(nil, true))
 	if fnerr != nil {
 		panic(fnerr)
 	}

@@ -17906,7 +17906,7 @@ func (_ fastpathT) DecSliceStringV(v []string, canChange bool, d *Decoder) (_ []
 		} else if dd.TryDecodeAsNil() {
 			v[uint(j)] = ""
 		} else {
-			v[uint(j)] = dd.DecodeString(0)
+			v[uint(j)] = dd.DecodeString()
 		}
 	}
 	if canChange {
@@ -19421,7 +19421,7 @@ func (_ fastpathT) DecMapIntfStringV(v map[interface{}]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -20380,7 +20380,7 @@ func (_ fastpathT) DecMapStringIntfV(v map[string]interface{}, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -20446,7 +20446,7 @@ func (_ fastpathT) DecMapStringStringV(v map[string]string, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -20459,7 +20459,7 @@ func (_ fastpathT) DecMapStringStringV(v map[string]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -20507,7 +20507,7 @@ func (_ fastpathT) DecMapStringUintV(v map[string]uint, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -20568,7 +20568,7 @@ func (_ fastpathT) DecMapStringUint8V(v map[string]uint8, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -20629,7 +20629,7 @@ func (_ fastpathT) DecMapStringUint16V(v map[string]uint16, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -20690,7 +20690,7 @@ func (_ fastpathT) DecMapStringUint32V(v map[string]uint32, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -20751,7 +20751,7 @@ func (_ fastpathT) DecMapStringUint64V(v map[string]uint64, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -20812,7 +20812,7 @@ func (_ fastpathT) DecMapStringUintptrV(v map[string]uintptr, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -20873,7 +20873,7 @@ func (_ fastpathT) DecMapStringIntV(v map[string]int, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -20934,7 +20934,7 @@ func (_ fastpathT) DecMapStringInt8V(v map[string]int8, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -20995,7 +20995,7 @@ func (_ fastpathT) DecMapStringInt16V(v map[string]int16, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -21056,7 +21056,7 @@ func (_ fastpathT) DecMapStringInt32V(v map[string]int32, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -21117,7 +21117,7 @@ func (_ fastpathT) DecMapStringInt64V(v map[string]int64, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -21178,7 +21178,7 @@ func (_ fastpathT) DecMapStringFloat32V(v map[string]float32, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -21239,7 +21239,7 @@ func (_ fastpathT) DecMapStringFloat64V(v map[string]float64, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -21300,7 +21300,7 @@ func (_ fastpathT) DecMapStringBoolV(v map[string]bool, canChange bool,
 		if esep {
 			dd.ReadMapElemKey()
 		}
-		mk = dd.DecodeString(0)
+		mk = dd.DecodeString()
 		if esep {
 			dd.ReadMapElemValue()
 		}
@@ -21441,7 +21441,7 @@ func (_ fastpathT) DecMapFloat32StringV(v map[float32]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -22423,7 +22423,7 @@ func (_ fastpathT) DecMapFloat64StringV(v map[float64]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -23405,7 +23405,7 @@ func (_ fastpathT) DecMapUintStringV(v map[uint]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -24387,7 +24387,7 @@ func (_ fastpathT) DecMapUint8StringV(v map[uint8]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -25369,7 +25369,7 @@ func (_ fastpathT) DecMapUint16StringV(v map[uint16]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -26351,7 +26351,7 @@ func (_ fastpathT) DecMapUint32StringV(v map[uint32]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -27333,7 +27333,7 @@ func (_ fastpathT) DecMapUint64StringV(v map[uint64]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -28315,7 +28315,7 @@ func (_ fastpathT) DecMapUintptrStringV(v map[uintptr]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -29297,7 +29297,7 @@ func (_ fastpathT) DecMapIntStringV(v map[int]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -30279,7 +30279,7 @@ func (_ fastpathT) DecMapInt8StringV(v map[int8]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -31261,7 +31261,7 @@ func (_ fastpathT) DecMapInt16StringV(v map[int16]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -32243,7 +32243,7 @@ func (_ fastpathT) DecMapInt32StringV(v map[int32]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -33225,7 +33225,7 @@ func (_ fastpathT) DecMapInt64StringV(v map[int64]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}
@@ -34207,7 +34207,7 @@ func (_ fastpathT) DecMapBoolStringV(v map[bool]string, canChange bool,
 			}
 			continue
 		}
-		mv = dd.DecodeString(0)
+		mv = dd.DecodeString()
 		if v != nil {
 			v[mk] = mv
 		}

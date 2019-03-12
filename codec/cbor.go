@@ -516,7 +516,7 @@ func (d *cborDecDriver) decAppendIndefiniteBytes(bs []byte) []byte {
 	return bs
 }
 
-func (d *cborDecDriver) DecodeBytes(bs []byte, zerocopy bool, maxLen uint64) (bsOut []byte) {
+func (d *cborDecDriver) DecodeBytes(bs []byte, zerocopy bool) (bsOut []byte) {
 	if !d.bdRead {
 		d.readNextBd()
 	}
@@ -551,12 +551,12 @@ func (d *cborDecDriver) DecodeBytes(bs []byte, zerocopy bool, maxLen uint64) (bs
 	return decByteSlice(d.r, clen, d.h.MaxInitLen, bs)
 }
 
-func (d *cborDecDriver) DecodeString(maxLen uint64) (s string) {
-	return string(d.DecodeBytes(d.d.b[:], true, 0))
+func (d *cborDecDriver) DecodeString() (s string) {
+	return string(d.DecodeBytes(d.d.b[:], true))
 }
 
-func (d *cborDecDriver) DecodeStringAsBytes(maxLen uint64) (s []byte) {
-	return d.DecodeBytes(d.d.b[:], true, 0)
+func (d *cborDecDriver) DecodeStringAsBytes() (s []byte) {
+	return d.DecodeBytes(d.d.b[:], true)
 }
 
 func (d *cborDecDriver) DecodeTime() (t time.Time) {
@@ -579,7 +579,7 @@ func (d *cborDecDriver) decodeTime(xtag uint64) (t time.Time) {
 	switch xtag {
 	case 0:
 		var err error
-		if t, err = time.Parse(time.RFC3339, stringView(d.DecodeStringAsBytes(0))); err != nil {
+		if t, err = time.Parse(time.RFC3339, stringView(d.DecodeStringAsBytes())); err != nil {
 			d.d.errorv(err)
 		}
 	case 1:
@@ -650,10 +650,10 @@ func (d *cborDecDriver) DecodeNaked() {
 		n.f = d.DecodeFloat64()
 	case cborBdIndefiniteBytes:
 		n.v = valueTypeBytes
-		n.l = d.DecodeBytes(nil, false, 0)
+		n.l = d.DecodeBytes(nil, false)
 	case cborBdIndefiniteString:
 		n.v = valueTypeString
-		n.s = d.DecodeString(0)
+		n.s = d.DecodeString()
 	case cborBdIndefiniteArray:
 		n.v = valueTypeArray
 		decodeFurther = true
@@ -675,10 +675,10 @@ func (d *cborDecDriver) DecodeNaked() {
 			n.i = d.DecodeInt64()
 		case d.bd >= cborBaseBytes && d.bd < cborBaseString:
 			n.v = valueTypeBytes
-			n.l = d.DecodeBytes(nil, false, 0)
+			n.l = d.DecodeBytes(nil, false)
 		case d.bd >= cborBaseString && d.bd < cborBaseArray:
 			n.v = valueTypeString
-			n.s = d.DecodeString(0)
+			n.s = d.DecodeString()
 		case d.bd >= cborBaseArray && d.bd < cborBaseMap:
 			n.v = valueTypeArray
 			decodeFurther = true

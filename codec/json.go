@@ -954,7 +954,7 @@ func (d *jsonDecDriver) DecodeExt(rv interface{}, xtag uint64, ext Ext) (realxta
 	return
 }
 
-func (d *jsonDecDriver) DecodeBytes(bs []byte, zerocopy bool, maxLen uint64) (bsOut []byte) {
+func (d *jsonDecDriver) DecodeBytes(bs []byte, zerocopy bool) (bsOut []byte) {
 	// if decoding into raw bytes, and the RawBytesExt is configured, use it to decode.
 	if d.se.InterfaceExt != nil {
 		bsOut = bs
@@ -1000,12 +1000,12 @@ func (d *jsonDecDriver) DecodeBytes(bs []byte, zerocopy bool, maxLen uint64) (bs
 	return
 }
 
-func (d *jsonDecDriver) DecodeString(maxLen uint64) (s string) {
+func (d *jsonDecDriver) DecodeString() (s string) {
 	d.appendStringAsBytes()
 	return d.bsToString()
 }
 
-func (d *jsonDecDriver) DecodeStringAsBytes(maxLen uint64) (s []byte) {
+func (d *jsonDecDriver) DecodeStringAsBytes() (s []byte) {
 	d.appendStringAsBytes()
 	return d.bs
 }

@@ -24,7 +24,6 @@ const (
 	decDefMaxDepth         = 1024 // maximum depth
 	decDefSliceCap         = 8
 	decDefChanCap          = 64            // should be large, as cap cannot be expanded
-	maxFieldNameLen        = 1024          // maximum name of a struct field key
 	decScratchByteArrayLen = cacheLineSize // + (8 * 2) // - (8 * 1)
 )
 
@@ -111,12 +110,12 @@ type decDriver interface {
 	// However, some codecs (e.g. binc) support symbols and can
 	// return a pre-stored string value, meaning that it can bypass
 	// the cost of []byte->string conversion.
-	DecodeString(maxLen uint64) (s string)
-	DecodeStringAsBytes(maxLen uint64) (v []byte)
+	DecodeString() (s string)
+	DecodeStringAsBytes() (v []byte)
 
 	// DecodeBytes may be called directly, without going through reflection.
 	// Consequently, it must be designed to handle possible nil.
-	DecodeBytes(bs []byte, zerocopy bool, maxLen uint64) (bsOut []byte)
+	DecodeBytes(bs []byte, zerocopy bool) (bsOut []byte)
 	// DecodeBytes(bs []byte, isstring, zerocopy bool) (bsOut []byte)
 
 	// decodeExt will decode into a *RawExt or into an extension.
@@ -1195,7 +1194,7 @@ func (d *Decoder) selferUnmarshal(f *codecFnInfo, rv reflect.Value) {
 
 func (d *Decoder) binaryUnmarshal(f *codecFnInfo, rv reflect.Value) {
 	bm := rv2i(rv).(encoding.BinaryUnmarshaler)
-	xbs := d.d.DecodeBytes(nil, true, 0)
+	xbs := d.d.DecodeBytes(nil, true)
 	if fnerr := bm.UnmarshalBinary(xbs); fnerr != nil {
 		panic(fnerr)
 	}
@@ -1203,7 +1202,7 @@ func (d *Decoder) binaryUnmarshal(f *codecFnInfo, rv reflect.Value) {
 
 func (d *Decoder) textUnmarshal(f *codecFnInfo, rv reflect.Value) {
 	tm := rv2i(rv).(encoding.TextUnmarshaler)
-	fnerr := tm.UnmarshalText(d.d.DecodeStringAsBytes(f.ti.maxLen))
+	fnerr := tm.UnmarshalText(d.d.DecodeStringAsBytes())
 	if fnerr != nil {
 		panic(fnerr)
 	}
@@ -1266,7 +1265,7 @@ func (d *Decoder) kInterfaceNaked(f *codecFnInfo) (rvn reflect.Value) {
 				rvn = rvn.Elem()
 			} else {
 				rvn = reflect.New(d.h.MapType).Elem()
-				d.decodeValue(rvn, 0, nil, true)
+				d.decodeValue(rvn, nil, true)
 			}
 		}
 	case valueTypeArray:
@@ -1286,7 +1285,7 @@ func (d *Decoder) kInterfaceNaked(f *codecFnInfo) (rvn reflect.Value) {
 				rvn = rvn.Elem()
 			} else {
 				rvn = reflect.New(d.h.SliceType).Elem()
-				d.decodeValue(rvn, 0, nil, true)
+				d.decodeValue(rvn, nil, true)
 			}
 		}
 	case valueTypeExt:
@@ -1373,13 +1372,13 @@ func (d *Decoder) kInterface(f *codecFnInfo, rv reflect.Value) {
 
 	rvn2, canDecode := isDecodeable(rvn)
 	if canDecode {
-		d.decodeValue(rvn2, 0, nil, true)
+		d.decodeValue(rvn2, nil, true)
 		return
 	}
 
 	rvn2 = reflect.New(rvn.Type()).Elem()
 	rvn2.Set(rvn)
-	d.decodeValue(rvn2, 0, nil, true)
+	d.decodeValue(rvn2, nil, true)
 	rv.Set(rvn2)
 }
 
@@ -1388,7 +1387,7 @@ func decStructFieldKey(dd decDriver, keyType valueType, b *[decScratchByteArrayL
 	// since keyType is typically valueTypeString, branch prediction is pretty good.
 
 	if keyType == valueTypeString {
-		rvkencname = dd.DecodeStringAsBytes(maxFieldNameLen)
+		rvkencname = dd.DecodeStringAsBytes()
 	} else if keyType == valueTypeInt {
 		rvkencname = strconv.AppendInt(b[:0], dd.DecodeInt64(), 10)
 	} else if keyType == valueTypeUint {
@@ -1396,7 +1395,7 @@ func decStructFieldKey(dd decDriver, keyType valueType, b *[decScratchByteArrayL
 	} else if keyType == valueTypeFloat {
 		rvkencname = strconv.AppendFloat(b[:0], dd.DecodeFloat64(), 'f', -1, 64)
 	} else {
-		rvkencname = dd.DecodeStringAsBytes(maxFieldNameLen)
+		rvkencname = dd.DecodeStringAsBytes()
 	}
 	return rvkencname
 }
@@ -1437,7 +1436,7 @@ func (d *Decoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 				if dd.TryDecodeAsNil() {
 					si.setToZeroValue(rv)
 				} else {
-					d.decodeValue(sfn.field(si), si.maxLen, nil, true)
+					d.decodeValue(sfn.field(si), nil, true)
 				}
 			} else if mf != nil {
 				// store rvkencname in new []byte, as it previously shares Decoder.b, which is used in decode
@@ -1485,7 +1484,7 @@ func (d *Decoder) kStruct(f *codecFnInfo, rv reflect.Value) {
 			if dd.TryDecodeAsNil() {
 				si.setToZeroValue(rv)
 			} else {
-				d.decodeValue(sfn.field(si), si.maxLen, nil, true)
+				d.decodeValue(sfn.field(si), nil, true)
 			}
 		}
 		if (hasLen && containerLen > len(fti.sfiSrc)) || (!hasLen && !checkbreak) {
@@ -1524,7 +1523,7 @@ func (d *Decoder) kSlice(f *codecFnInfo, rv reflect.Value) {
 			d.errorf("bytes/string in stream must decode into slice/array of bytes, not %v", ti.rt)
 		}
 		if f.seq == seqTypeChan {
-			bs2 := dd.DecodeBytes(nil, true, f.ti.maxLen)
+			bs2 := dd.DecodeBytes(nil, true)
 			irv := rv2i(rv)
 			ch, ok := irv.(chan<- byte)
 			if !ok {
@@ -1535,7 +1534,7 @@ func (d *Decoder) kSlice(f *codecFnInfo, rv reflect.Value) {
 			}
 		} else {
 			rvbs := rv.Bytes()
-			bs2 := dd.DecodeBytes(rvbs, false, f.ti.maxLen)
+			bs2 := dd.DecodeBytes(rvbs, false)
 			// if rvbs == nil && bs2 != nil || rvbs != nil && bs2 == nil || len(bs2) != len(rvbs) {
 			if !(len(bs2) > 0 && len(bs2) == len(rvbs) && &bs2[0] == &rvbs[0]) {
 				if rv.CanSet() {
@@ -1569,12 +1568,6 @@ func (d *Decoder) kSlice(f *codecFnInfo, rv reflect.Value) {
 		}
 		slh.End()
 		return
-	}
-
-	// If the container type is too long, bail out now
-	maxLen := int(f.ti.maxLen)
-	if maxLen > 0 && containerLenS > maxLen {
-		d.errorf("container len exceeded maxlen: %v > %v", containerLenS, maxLen)
 	}
 
 	d.depthIncr()
@@ -1670,7 +1663,7 @@ func (d *Decoder) kSlice(f *codecFnInfo, rv reflect.Value) {
 			if fn == nil {
 				fn = d.h.fn(rtelem, true, true)
 			}
-			d.decodeValue(rv9, 0, fn, true)
+			d.decodeValue(rv9, fn, true)
 			rv.Send(rv9)
 		} else {
 			// if indefinite, etc, then expand the slice if necessary
@@ -1715,7 +1708,7 @@ func (d *Decoder) kSlice(f *codecFnInfo, rv reflect.Value) {
 				if fn == nil {
 					fn = d.h.fn(rtelem, true, true)
 				}
-				d.decodeValue(rv9, 0, fn, true)
+				d.decodeValue(rv9, fn, true)
 			}
 		}
 	}
@@ -1820,14 +1813,14 @@ func (d *Decoder) kMap(f *codecFnInfo, rv reflect.Value) {
 		// 	rvk.Set(reflect.Zero(ktype))
 		// } else if ktypeIsString {
 		if ktypeIsString {
-			kstrbs = dd.DecodeStringAsBytes(0)
+			kstrbs = dd.DecodeStringAsBytes()
 			rvk.SetString(stringView(kstrbs))
 			// NOTE: if doing an insert, you MUST use a real string (not stringview)
 		} else {
 			if keyFn == nil {
 				keyFn = d.h.fn(ktypeLo, true, true)
 			}
-			d.decodeValue(rvk, 0, keyFn, true)
+			d.decodeValue(rvk, keyFn, true)
 		}
 		// special case if a byte array.
 		if ktypeIsIntf {
@@ -1897,7 +1890,7 @@ func (d *Decoder) kMap(f *codecFnInfo, rv reflect.Value) {
 		if valFn == nil {
 			valFn = d.h.fn(vtypeLo, true, true)
 		}
-		d.decodeValue(rvv, 0, valFn, true)
+		d.decodeValue(rvv, valFn, true)
 		// d.decodeValueFn(rvv, valFn)
 		if mapSet {
 			rv.SetMapIndex(rvk, rvv)
@@ -2600,7 +2593,6 @@ func (d *Decoder) swallow() {
 		containerLen := dd.ReadMapStart()
 		d.depthIncr()
 		hasLen := containerLen >= 0
-
 		for j := 0; (hasLen && j < containerLen) || !(hasLen || dd.CheckBreak()); j++ {
 			// if clenGtEqualZero {if j >= containerLen {break} } else if dd.CheckBreak() {break}
 			if elemsep {
@@ -2618,7 +2610,6 @@ func (d *Decoder) swallow() {
 		containerLen := dd.ReadArrayStart()
 		d.depthIncr()
 		hasLen := containerLen >= 0
-
 		for j := 0; (hasLen && j < containerLen) || !(hasLen || dd.CheckBreak()); j++ {
 			if elemsep {
 				dd.ReadArrayElem()
@@ -2628,9 +2619,9 @@ func (d *Decoder) swallow() {
 		dd.ReadArrayEnd()
 		d.depthDecr()
 	case valueTypeBytes:
-		dd.DecodeBytes(d.b[:], true, 0)
+		dd.DecodeBytes(d.b[:], true)
 	case valueTypeString:
-		dd.DecodeStringAsBytes(0)
+		dd.DecodeStringAsBytes()
 	default:
 		// these are all primitives, which we can get from decodeNaked
 		// if RawExt using Value, complete the processing.
@@ -2711,10 +2702,10 @@ func (d *Decoder) decode(iv interface{}) {
 	// case Selfer:
 	case reflect.Value:
 		v = d.ensureDecodeable(v)
-		d.decodeValue(v, 0, nil, true)
+		d.decodeValue(v, nil, true)
 
 	case *string:
-		*v = d.d.DecodeString(0)
+		*v = d.d.DecodeString()
 	case *bool:
 		*v = d.d.DecodeBool()
 	case *int:
@@ -2746,9 +2737,9 @@ func (d *Decoder) decode(iv interface{}) {
 	case *float64:
 		*v = d.d.DecodeFloat64()
 	case *[]uint8:
-		*v = d.d.DecodeBytes(*v, false, 0)
+		*v = d.d.DecodeBytes(*v, false)
 	case []uint8:
-		b := d.d.DecodeBytes(v, false, 0)
+		b := d.d.DecodeBytes(v, false)
 		if !(len(b) > 0 && len(b) == len(v) && &b[0] == &v[0]) {
 			copy(v, b)
 		}
@@ -2758,7 +2749,7 @@ func (d *Decoder) decode(iv interface{}) {
 		*v = d.rawBytes()
 
 	case *interface{}:
-		d.decodeValue(reflect.ValueOf(iv).Elem(), 0, nil, true)
+		d.decodeValue(reflect.ValueOf(iv).Elem(), nil, true)
 		// d.decodeValueNotNil(reflect.ValueOf(iv).Elem())
 
 	default:
@@ -2767,13 +2758,13 @@ func (d *Decoder) decode(iv interface{}) {
 		} else if !fastpathDecodeTypeSwitch(iv, d) {
 			v := reflect.ValueOf(iv)
 			v = d.ensureDecodeable(v)
-			d.decodeValue(v, 0, nil, false)
+			d.decodeValue(v, nil, false)
 			// d.decodeValueFallback(v)
 		}
 	}
 }
 
-func (d *Decoder) decodeValue(rv reflect.Value, maxLen uint64, fn *codecFn, chkAll bool) {
+func (d *Decoder) decodeValue(rv reflect.Value, fn *codecFn, chkAll bool) {
 	// If stream is not containing a nil value, then we can deref to the base
 	// non-pointer value, and decode into that.
 	var rvp reflect.Value
@@ -2796,11 +2787,6 @@ func (d *Decoder) decodeValue(rv reflect.Value, maxLen uint64, fn *codecFn, chkA
 		// always pass checkCodecSelfer=true, in case T or ****T is passed, where *T is a Selfer
 		fn = d.h.fn(rv.Type(), chkAll, true) // chkAll, chkAll)
 	}
-
-	if fn.i.ti != nil {
-		fn.i.ti.maxLen = maxLen
-	}
-
 	if fn.i.addrD {
 		if rvpValid {
 			fn.fd(d, &fn.i, rvp)
