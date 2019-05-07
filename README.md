@@ -23,5 +23,5 @@ For more information:
 
 Install using:
 
-    go get github.com/ugorji/go/codec
+    go get github.com/algorand/go-codec
 
