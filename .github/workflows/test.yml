@@ -15,7 +15,8 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
-      - run: |
+      - name: Run tests
+        run: |
           cd codec
           go test
           a=( "" "safe" "codecgen" "notfastpath" "codecgen notfastpath" "codecgen safe" "safe notfastpath" )
