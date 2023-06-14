@@ -259,6 +259,7 @@ func (_ fastpathT) {{ .MethodNamePfx "Enc" false }}V(v map[{{ .MapKey }}]{{ .Ele
 		var vp *bytesI {{/* put loop variables outside. seems currently needed for better perf */}}
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]

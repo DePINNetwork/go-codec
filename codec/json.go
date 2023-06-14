@@ -158,6 +158,10 @@ func (e *jsonEncDriverTypical) WriteMapStart(length int) {
 	e.c = containerMapStart
 }
 
+func (e *jsonEncDriverTypical) atMapElemKey() {
+	e.c = containerMapKey
+}
+
 func (e *jsonEncDriverTypical) WriteMapElemKey() {
 	if e.c != containerMapStart {
 		e.w.writen1(',')
@@ -282,6 +286,10 @@ func (e *jsonEncDriverGeneric) WriteMapStart(length int) {
 	}
 	e.w.writen1('{')
 	e.c = containerMapStart
+}
+
+func (e *jsonEncDriverGeneric) atMapElemKey() {
+	e.c = containerMapKey
 }
 
 func (e *jsonEncDriverGeneric) WriteMapElemKey() {

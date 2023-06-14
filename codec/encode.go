@@ -66,6 +66,7 @@ type encDriver interface {
 	WriteMapElemKey()
 	WriteMapElemValue()
 	WriteMapEnd()
+	atMapElemKey()
 
 	reset()
 	atEndOfEncode()
@@ -89,6 +90,7 @@ func (encDriverNoopContainerWriter) WriteArrayStart(length int) {}
 func (encDriverNoopContainerWriter) WriteArrayElem()            {}
 func (encDriverNoopContainerWriter) WriteArrayEnd()             {}
 func (encDriverNoopContainerWriter) WriteMapStart(length int)   {}
+func (encDriverNoopContainerWriter) atMapElemKey()              {}
 func (encDriverNoopContainerWriter) WriteMapElemKey()           {}
 func (encDriverNoopContainerWriter) WriteMapElemValue()         {}
 func (encDriverNoopContainerWriter) WriteMapEnd()               {}
@@ -102,6 +104,7 @@ func (e *encDriverTrackContainerWriter) WriteArrayStart(length int) { e.c = cont
 func (e *encDriverTrackContainerWriter) WriteArrayElem()            { e.c = containerArrayElem }
 func (e *encDriverTrackContainerWriter) WriteArrayEnd()             { e.c = containerArrayEnd }
 func (e *encDriverTrackContainerWriter) WriteMapStart(length int)   { e.c = containerMapStart }
+func (e *encDriverTrackContainerWriter) atMapElemKey()              { e.c = containerMapKey }
 func (e *encDriverTrackContainerWriter) WriteMapElemKey()           { e.c = containerMapKey }
 func (e *encDriverTrackContainerWriter) WriteMapElemValue()         { e.c = containerMapValue }
 func (e *encDriverTrackContainerWriter) WriteMapEnd()               { e.c = containerMapEnd }
@@ -1056,6 +1059,7 @@ func (e *Encoder) kMapCanonical(rtkey reflect.Type, rv reflect.Value, mks []refl
 		for i, k := range mks {
 			v := &mksbv[i]
 			l := len(mksv)
+			e2.e.atMapElemKey()
 			e2.MustEncode(k)
 			v.r = k
 			v.v = mksv[l:]

@@ -2289,6 +2289,7 @@ func (_ fastpathT) EncMapIntfIntfV(v map[interface{}]interface{}, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2345,6 +2346,7 @@ func (_ fastpathT) EncMapIntfStringV(v map[interface{}]string, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2401,6 +2403,7 @@ func (_ fastpathT) EncMapIntfUintV(v map[interface{}]uint, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2457,6 +2460,7 @@ func (_ fastpathT) EncMapIntfUint8V(v map[interface{}]uint8, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2513,6 +2517,7 @@ func (_ fastpathT) EncMapIntfUint16V(v map[interface{}]uint16, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2569,6 +2574,7 @@ func (_ fastpathT) EncMapIntfUint32V(v map[interface{}]uint32, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2625,6 +2631,7 @@ func (_ fastpathT) EncMapIntfUint64V(v map[interface{}]uint64, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2681,6 +2688,7 @@ func (_ fastpathT) EncMapIntfUintptrV(v map[interface{}]uintptr, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2737,6 +2745,7 @@ func (_ fastpathT) EncMapIntfIntV(v map[interface{}]int, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2793,6 +2802,7 @@ func (_ fastpathT) EncMapIntfInt8V(v map[interface{}]int8, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2849,6 +2859,7 @@ func (_ fastpathT) EncMapIntfInt16V(v map[interface{}]int16, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2905,6 +2916,7 @@ func (_ fastpathT) EncMapIntfInt32V(v map[interface{}]int32, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -2961,6 +2973,7 @@ func (_ fastpathT) EncMapIntfInt64V(v map[interface{}]int64, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -3017,6 +3030,7 @@ func (_ fastpathT) EncMapIntfFloat32V(v map[interface{}]float32, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -3073,6 +3087,7 @@ func (_ fastpathT) EncMapIntfFloat64V(v map[interface{}]float64, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
@@ -3129,6 +3144,7 @@ func (_ fastpathT) EncMapIntfBoolV(v map[interface{}]bool, e *Encoder) {
 		var vp *bytesI
 		for k2 := range v {
 			l = uint(len(mksv))
+			e2.e.atMapElemKey()
 			e2.MustEncode(k2)
 			vp = &v2[i]
 			vp.v = mksv[l:]
