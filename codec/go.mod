@@ -1,4 +1,4 @@
-module github.com/algorand/go-codec/codec
+module github.com/DePINNetwork/go-codec/codec
 
 go 1.16
 
