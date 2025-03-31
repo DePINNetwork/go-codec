@@ -1,7 +1,7 @@
-module github.com/algorand/go-codec
+module github.com/DePINNetwork/go-codec
 
-go 1.16
+go 1.23
 
-replace github.com/algorand/go-codec/codec => ./codec
+require github.com/DePINNetwork/go-codec/codec v1.1.10
 
-require github.com/algorand/go-codec/codec v1.1.10
+replace github.com/DePINNetwork/go-codec/codec => github.com/DePINNetwork/go-codec v0.0.1
