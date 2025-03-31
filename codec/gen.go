@@ -6,6 +6,7 @@
 package codec
 
 import (
+
 	"bytes"
 	"encoding/base64"
 	"errors"
@@ -244,7 +245,8 @@ func Gen(w io.Writer, buildTags, pkgName, uid string, noExtensions bool,
 `)
 	x.line("package " + pkgName)
 	x.line("")
-	x.line("import (")
+	x.line("import (
+")
 	if x.cp != x.bp {
 		x.cpfx = genCodecPkg + "."
 		x.linef("%s \"%s\"", genCodecPkg, x.cp)

@@ -97,6 +97,7 @@ package codec
 // check for these error conditions.
 
 import (
+
 	"bytes"
 	"encoding"
 	"encoding/binary"

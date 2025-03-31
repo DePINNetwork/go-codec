@@ -4,6 +4,7 @@
 package codec
 
 import (
+
 	"encoding"
 	"errors"
 	"fmt"

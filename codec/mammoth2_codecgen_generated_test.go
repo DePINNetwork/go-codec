@@ -5,6 +5,7 @@
 package codec
 
 import (
+
 	"errors"
 	"runtime"
 	"strconv"

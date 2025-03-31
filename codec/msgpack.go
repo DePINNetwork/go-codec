@@ -20,6 +20,7 @@ For compatibility with behaviour of msgpack-c reference implementation:
 package codec
 
 import (
+
 	"fmt"
 	"io"
 	"math"

@@ -22,6 +22,7 @@ package codec
 // MUST not call one-another.
 
 import (
+
 	"bytes"
 	"encoding/base64"
 	"math"

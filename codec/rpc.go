@@ -4,6 +4,7 @@
 package codec
 
 import (
+
 	"bufio"
 	"errors"
 	"io"

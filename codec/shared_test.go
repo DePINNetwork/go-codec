@@ -41,6 +41,7 @@ package codec
 // and will not redefine these "global" flags.
 
 import (
+
 	"bytes"
 	"flag"
 	"fmt"

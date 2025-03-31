@@ -4,6 +4,7 @@
 package codec
 
 import (
+
 	"bufio"
 	"bytes"
 	"encoding/gob"

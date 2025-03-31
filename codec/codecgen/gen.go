@@ -21,6 +21,7 @@
 package main
 
 import (
+
 	"bufio"
 	"bytes"
 	"errors"
@@ -61,6 +62,7 @@ const genFrunPkgTmpl = `
 package {{ $.PackageName }}
 
 import (
+
 	{{ if not .CodecPkgFiles }}{{ .CodecPkgName }} "{{ .CodecImportPath }}"{{ end }}
 	"os"
 	"reflect"

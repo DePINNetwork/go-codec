@@ -6,6 +6,7 @@
 package codec
 
 import (
+
 	"reflect"
 	"sync/atomic"
 	"time"

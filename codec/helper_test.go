@@ -7,6 +7,7 @@ package codec
 // so porting to different environment is easy (just update functions).
 
 import (
+
 	"errors"
 	"reflect"
 )
