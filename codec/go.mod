@@ -1,7 +1,3 @@
-module github.com/algorand/go-codec/codec
+module github.com/ugorji/go/codec
 
-go 1.16
-
-require (
-	golang.org/x/tools v0.1.10
-)
+go 1.11

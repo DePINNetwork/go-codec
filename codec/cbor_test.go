@@ -1,26 +1,28 @@
-// Copyright (c) 2012-2018 Ugorji Nwoke. All rights reserved.
+// Copyright (c) 2012-2020 Ugorji Nwoke. All rights reserved.
 // Use of this source code is governed by a MIT license found in the LICENSE file.
 
 package codec
 
 import (
-
 	"bufio"
 	"bytes"
 	"encoding/hex"
 	"math"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
 )
 
 func TestCborIndefiniteLength(t *testing.T) {
-	oldMapType := testCborH.MapType
-	defer func() {
-		testCborH.MapType = oldMapType
-	}()
-	testCborH.MapType = testMapStrIntfTyp
+	var h Handle = testCborH
+	defer testSetup(t, &h)()
+	bh := testBasicHandle(h)
+	defer func(oldMapType reflect.Type) {
+		bh.MapType = oldMapType
+	}(bh.MapType)
+	bh.MapType = testMapStrIntfTyp
 	// var (
 	// 	M1 map[string][]byte
 	// 	M2 map[uint64]bool
@@ -37,7 +39,7 @@ func TestCborIndefiniteLength(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	// buf.Reset()
-	e := NewEncoder(&buf, testCborH)
+	e := NewEncoder(&buf, h)
 	buf.WriteByte(cborBdIndefiniteMap)
 	//----
 	buf.WriteByte(cborBdIndefiniteString)
@@ -59,8 +61,8 @@ func TestCborIndefiniteLength(t *testing.T) {
 	buf.WriteByte(cborBdBreak)
 
 	buf.WriteByte(cborBdIndefiniteString)
-	e.MustEncode([]byte("two-")) // encode as bytes, to check robustness of code
-	e.MustEncode([]byte("value"))
+	e.MustEncode("two-")
+	e.MustEncode("value")
 	buf.WriteByte(cborBdBreak)
 
 	//----
@@ -79,12 +81,61 @@ func TestCborIndefiniteLength(t *testing.T) {
 
 	buf.WriteByte(cborBdBreak) // close map
 
-	NewDecoderBytes(buf.Bytes(), testCborH).MustDecode(&vv)
+	NewDecoderBytes(buf.Bytes(), h).MustDecode(&vv)
 	if err := deepEqual(v, vv); err != nil {
-		logT(t, "-------- Before and After marshal do not match: Error: %v", err)
-		logT(t, "    ....... GOLDEN:  (%T) %#v", v, v)
-		logT(t, "    ....... DECODED: (%T) %#v", vv, vv)
-		failT(t)
+		t.Logf("-------- Before and After marshal do not match: Error: %v", err)
+		if testVerbose {
+			t.Logf("    ....... GOLDEN:  (%T) %#v", v, v)
+			t.Logf("    ....... DECODED: (%T) %#v", vv, vv)
+		}
+		t.FailNow()
+	}
+}
+
+// "If any item between the indefinite-length string indicator (0b010_11111 or 0b011_11111) and the
+// "break" stop code is not a definite-length string item of the same major type, the string is not
+// well-formed."
+func TestCborIndefiniteLengthStringChunksCannotMixTypes(t *testing.T) {
+	if !testRecoverPanicToErr {
+		t.Skip(testSkipIfNotRecoverPanicToErrMsg)
+	}
+	var h Handle = testCborH
+	defer testSetup(t, &h)()
+
+	for _, in := range [][]byte{
+		{cborBdIndefiniteString, 0x40, cborBdBreak}, // byte string chunk in indefinite length text string
+		{cborBdIndefiniteBytes, 0x60, cborBdBreak},  // text string chunk in indefinite length byte string
+	} {
+		var out string
+		err := NewDecoderBytes(in, h).Decode(&out)
+		if err == nil {
+			t.Errorf("expected error but decoded 0x%x to: %q", in, out)
+		}
+	}
+}
+
+// "If any definite-length text string inside an indefinite-length text string is invalid, the
+// indefinite-length text string is invalid. Note that this implies that the UTF-8 bytes of a single
+// Unicode code point (scalar value) cannot be spread between chunks: a new chunk of a text string
+// can only be started at a code point boundary."
+func TestCborIndefiniteLengthTextStringChunksAreUTF8(t *testing.T) {
+	if !testRecoverPanicToErr {
+		t.Skip(testSkipIfNotRecoverPanicToErrMsg)
+	}
+	var h Handle = testCborH
+	defer testSetup(t, &h)()
+
+	bh := testBasicHandle(h)
+	defer func(oldValidateUnicode bool) {
+		bh.ValidateUnicode = oldValidateUnicode
+	}(bh.ValidateUnicode)
+	bh.ValidateUnicode = true
+
+	var out string
+	in := []byte{cborBdIndefiniteString, 0x61, 0xc2, 0x61, 0xa3, cborBdBreak}
+	err := NewDecoderBytes(in, h).Decode(&out)
+	if err == nil {
+		t.Errorf("expected error but decoded to: %q", out)
 	}
 }
 
@@ -99,11 +150,14 @@ type testCborGolden struct {
 
 // Some tests are skipped because they include numbers outside the range of int64/uint64
 func TestCborGoldens(t *testing.T) {
-	oldMapType := testCborH.MapType
-	defer func() {
-		testCborH.MapType = oldMapType
-	}()
-	testCborH.MapType = testMapStrIntfTyp
+	var h Handle = testCborH
+	defer testSetup(t, &h)()
+	bh := testBasicHandle(h)
+	defer func(oldMapType reflect.Type) {
+		bh.MapType = oldMapType
+	}(bh.MapType)
+	bh.MapType = testMapStrIntfTyp
+
 	// decode test-cbor-goldens.json into a list of []*testCborGolden
 	// for each one,
 	// - decode hex into []byte bs
@@ -113,8 +167,8 @@ func TestCborGoldens(t *testing.T) {
 	var gs []*testCborGolden
 	f, err := os.Open("test-cbor-goldens.json")
 	if err != nil {
-		logT(t, "error opening test-cbor-goldens.json: %v", err)
-		failT(t)
+		t.Logf("error opening test-cbor-goldens.json: %v", err)
+		t.FailNow()
 	}
 	defer f.Close()
 	jh := new(JsonHandle)
@@ -124,8 +178,8 @@ func TestCborGoldens(t *testing.T) {
 	// err = d.Decode(&gs)
 	d.MustDecode(&gs)
 	if err != nil {
-		logT(t, "error json decoding test-cbor-goldens.json: %v", err)
-		failT(t)
+		t.Logf("error json decoding test-cbor-goldens.json: %v", err)
+		t.FailNow()
 	}
 
 	tagregex := regexp.MustCompile(`[\d]+\(.+?\)`)
@@ -135,7 +189,9 @@ func TestCborGoldens(t *testing.T) {
 		// skip tags or simple or those with prefix, as we can't verify them.
 		if g.Skip || strings.HasPrefix(g.Diagnostic, "simple(") || tagregex.MatchString(g.Diagnostic) {
 			// fmt.Printf("%v: skipped\n", i)
-			logT(t, "[%v] skipping because skip=true OR unsupported simple value or Tag Value", i)
+			if testVerbose {
+				t.Logf("[%v] skipping because skip=true OR unsupported simple value or Tag Value", i)
+			}
 			continue
 		}
 		// println("++++++++++++", i, "g.Diagnostic", g.Diagnostic)
@@ -150,11 +206,11 @@ func TestCborGoldens(t *testing.T) {
 		}
 		bs, err := hex.DecodeString(g.Hex)
 		if err != nil {
-			logT(t, "[%v] error hex decoding %s [%v]: %v", i, g.Hex, g.Hex, err)
-			failT(t)
+			t.Logf("[%v] error hex decoding %s [%v]: %v", i, g.Hex, g.Hex, err)
+			t.FailNow()
 		}
 		var v interface{}
-		NewDecoderBytes(bs, testCborH).MustDecode(&v)
+		NewDecoderBytes(bs, h).MustDecode(&v)
 		if _, ok := v.(RawExt); ok {
 			continue
 		}
@@ -187,21 +243,27 @@ func testCborError(t *testing.T, i int, v0, v1 interface{}, err error, equal *bo
 		return
 	}
 	if err != nil {
-		logT(t, "[%v] deepEqual error: %v", i, err)
-		logT(t, "    ....... GOLDEN:  (%T) %#v", v0, v0)
-		logT(t, "    ....... DECODED: (%T) %#v", v1, v1)
-		failT(t)
+		t.Logf("[%v] deepEqual error: %v", i, err)
+		if testVerbose {
+			t.Logf("    ....... GOLDEN:  (%T) %#v", v0, v0)
+			t.Logf("    ....... DECODED: (%T) %#v", v1, v1)
+		}
+		t.FailNow()
 	}
 	if equal != nil && !*equal {
-		logT(t, "[%v] values not equal", i)
-		logT(t, "    ....... GOLDEN:  (%T) %#v", v0, v0)
-		logT(t, "    ....... DECODED: (%T) %#v", v1, v1)
-		failT(t)
+		t.Logf("[%v] values not equal", i)
+		if testVerbose {
+			t.Logf("    ....... GOLDEN:  (%T) %#v", v0, v0)
+			t.Logf("    ....... DECODED: (%T) %#v", v1, v1)
+		}
+		t.FailNow()
 	}
 	// fmt.Printf("%v testCborError passed (checks passed)\n", i)
 }
 
 func TestCborHalfFloat(t *testing.T) {
+	var h Handle = testCborH
+	defer testSetup(t, &h)()
 	m := map[uint16]float64{
 		// using examples from
 		// https://en.wikipedia.org/wiki/Half-precision_floating-point_format
@@ -220,12 +282,165 @@ func TestCborHalfFloat(t *testing.T) {
 	var res float64
 	for k, v := range m {
 		res = 0
-		bigen.PutUint16(ba[1:], k)
-		testUnmarshalErr(&res, ba[:3], testCborH, t, "-")
+		bigenstd.PutUint16(ba[1:], k)
+		testUnmarshalErr(&res, ba[:3], h, t, "-")
 		if res == v {
-			logT(t, "equal floats: from %x %b, %v", k, k, v)
+			if testVerbose {
+				t.Logf("equal floats: from %x %b, %v", k, k, v)
+			}
 		} else {
-			failT(t, "unequal floats: from %x %b, %v != %v", k, k, res, v)
+			t.Logf("unequal floats: from %x %b, %v != %v", k, k, res, v)
+			t.FailNow()
+		}
+	}
+}
+
+func TestCborSkipTags(t *testing.T) {
+	defer testSetup(t, nil)()
+	type Tcbortags struct {
+		A string
+		M map[string]interface{}
+		// A []interface{}
+	}
+	var b8 [8]byte
+	var w bytesEncAppender
+	w.b = []byte{}
+
+	// To make it easier,
+	//    - use tags between math.MaxUint8 and math.MaxUint16 (incl SelfDesc)
+	//    - use 1 char strings for key names
+	//    - use 3-6 char strings for map keys
+	//    - use integers that fit in 2 bytes (between 0x20 and 0xff)
+
+	var tags = [...]uint64{math.MaxUint8 * 2, math.MaxUint8 * 8, 55799, math.MaxUint16 / 2}
+	var tagIdx int
+	var doAddTag bool
+	addTagFn8To16 := func() {
+		if !doAddTag {
+			return
+		}
+		// writes a tag between MaxUint8 and MaxUint16 (culled from cborEncDriver.encUint)
+		w.writen1(cborBaseTag + 0x19)
+		// bigenHelper.writeUint16
+		bigenstd.PutUint16(b8[:2], uint16(tags[tagIdx%len(tags)]))
+		w.writeb(b8[:2])
+		tagIdx++
+	}
+
+	var v Tcbortags
+	v.A = "cbor"
+	v.M = make(map[string]interface{})
+	v.M["111"] = uint64(111)
+	v.M["111.11"] = 111.11
+	v.M["true"] = true
+	// v.A = append(v.A, 222, 22.22, "true")
+
+	// make stream manually (interspacing tags around it)
+	// WriteMapStart - e.encLen(cborBaseMap, length) - encUint(length, bd)
+	// EncodeStringEnc - e.encStringBytesS(cborBaseString, v)
+
+	fnEncode := func() {
+		w.b = w.b[:0]
+		addTagFn8To16()
+		// write v (Tcbortags, with 3 fields = map with 3 entries)
+		w.writen1(2 + cborBaseMap) // 3 fields = 3 entries
+		// write v.A
+		var s = "A"
+		w.writen1(byte(len(s)) + cborBaseString)
+		w.writestr(s)
+		w.writen1(byte(len(v.A)) + cborBaseString)
+		w.writestr(v.A)
+		//w.writen1(0)
+
+		addTagFn8To16()
+		s = "M"
+		w.writen1(byte(len(s)) + cborBaseString)
+		w.writestr(s)
+
+		addTagFn8To16()
+		w.writen1(byte(len(v.M)) + cborBaseMap)
+
+		addTagFn8To16()
+		s = "111"
+		w.writen1(byte(len(s)) + cborBaseString)
+		w.writestr(s)
+		w.writen2(cborBaseUint+0x18, uint8(111))
+
+		addTagFn8To16()
+		s = "111.11"
+		w.writen1(byte(len(s)) + cborBaseString)
+		w.writestr(s)
+		w.writen1(cborBdFloat64)
+		bigenstd.PutUint64(b8[:8], math.Float64bits(111.11))
+		w.writeb(b8[:8])
+
+		addTagFn8To16()
+		s = "true"
+		w.writen1(byte(len(s)) + cborBaseString)
+		w.writestr(s)
+		w.writen1(cborBdTrue)
+	}
+
+	var h CborHandle
+	h.SkipUnexpectedTags = true
+	h.Canonical = true
+
+	var gold []byte
+	NewEncoderBytes(&gold, &h).MustEncode(v)
+	// xdebug2f("encoded:    gold: %v", gold)
+
+	// w.b is the encoded bytes
+	var v2 Tcbortags
+	doAddTag = false
+	fnEncode()
+	// xdebug2f("manual:  no-tags: %v", w.b)
+
+	testDeepEqualErr(gold, w.b, t, "cbor-skip-tags--bytes---")
+	NewDecoderBytes(w.b, &h).MustDecode(&v2)
+	testDeepEqualErr(v, v2, t, "cbor-skip-tags--no-tags-")
+
+	var v3 Tcbortags
+	doAddTag = true
+	fnEncode()
+	// xdebug2f("manual: has-tags: %v", w.b)
+	NewDecoderBytes(w.b, &h).MustDecode(&v3)
+	testDeepEqualErr(v, v2, t, "cbor-skip-tags--has-tags")
+
+	// Github 300 - tests naked path
+	{
+		expected := []interface{}{"x", uint64(0x0)}
+		toDecode := []byte{0x82, 0x61, 0x78, 0x00}
+
+		var raw interface{}
+
+		NewDecoderBytes(toDecode, &h).MustDecode(&raw)
+		testDeepEqualErr(expected, raw, t, "cbor-skip-tags--gh-300---no-skips")
+
+		toDecode = []byte{0xd9, 0xd9, 0xf7, 0x82, 0x61, 0x78, 0x00}
+		raw = nil
+		NewDecoderBytes(toDecode, &h).MustDecode(&raw)
+		testDeepEqualErr(expected, raw, t, "cbor-skip-tags--gh-300--has-skips")
+	}
+}
+
+func TestCborMalformed(t *testing.T) {
+	if !testRecoverPanicToErr {
+		t.Skip(testSkipIfNotRecoverPanicToErrMsg)
+	}
+	var h Handle = testCborH
+	defer testSetup(t, &h)()
+	var bad = [][]byte{
+		[]byte("\x9b\x00\x00000000"),
+		[]byte("\x9b\x00\x00\x81112233"),
+	}
+
+	var out interface{}
+	for _, v := range bad {
+		out = nil
+		err := testUnmarshal(&out, v, h)
+		if err == nil {
+			t.Logf("missing expected error decoding malformed cbor")
+			t.FailNow()
 		}
 	}
 }

@@ -1,6 +1,6 @@
 // comment this out // + build testing
 
-// Copyright (c) 2012-2018 Ugorji Nwoke. All rights reserved.
+// Copyright (c) 2012-2020 Ugorji Nwoke. All rights reserved.
 // Use of this source code is governed by a MIT license found in the LICENSE file.
 
 package codec
@@ -17,8 +17,8 @@ package codec
 //   so we don't use them in this file.
 
 import (
-
 	"math"
+	"strconv"
 	"strings"
 )
 
@@ -27,6 +27,8 @@ import (
 // 	defTypeInfos.get(rt2id(rt), rt)
 // }
 
+const numStrUi64T = 32 // use 8, prefer 32, test with 1024
+
 type wrapSliceUint64 []uint64
 type wrapSliceString []string
 type wrapUint64 uint64
@@ -34,9 +36,16 @@ type wrapString string
 type wrapUint64Slice []wrapUint64
 type wrapStringSlice []wrapString
 
+// some other types
+
 type stringUint64T struct {
 	S string
 	U uint64
+}
+
+type AnonInTestStrucSlim struct {
+	S string
+	P *string
 }
 
 type AnonInTestStruc struct {
@@ -50,16 +59,19 @@ type AnonInTestStruc struct {
 	AF64slice  []float64
 	AF32slice  []float32
 
+	AMSS map[string]string
 	// AMI32U32  map[int32]uint32
 	// AMU32F64 map[uint32]float64 // json/bson do not like it
-	AMSU16 map[string]uint16
+	AMSU64 map[string]uint64
+
+	AI64arr8 [8]int64
 
 	// use these to test 0-len or nil slices/maps/arrays
 	AI64arr0    [0]int64
-	A164slice0  []int64
+	AI64slice0  []int64
 	AUi64sliceN []uint64
-	AMSU16N     map[string]uint16
-	AMSU16E     map[string]uint16
+	AMSU64N     map[string]uint64
+	AMSU64E     map[string]uint64
 }
 
 // testSimpleFields is a sub-set of TestStrucCommon
@@ -78,7 +90,7 @@ type testSimpleFields struct {
 	B bool
 
 	Sslice    []string
-	I16slice  []int16
+	I32slice  []int32
 	Ui64slice []uint64
 	Ui8slice  []uint8
 	Bslice    []bool
@@ -88,7 +100,7 @@ type testSimpleFields struct {
 	WrapSliceInt64  wrapSliceUint64
 	WrapSliceString wrapSliceString
 
-	Msi64 map[string]int64
+	Msint map[string]int
 }
 
 type TestStrucCommon struct {
@@ -117,26 +129,34 @@ type TestStrucCommon struct {
 
 	Sslice    []string
 	I64slice  []int64
-	I16slice  []int16
+	I32slice  []int32
 	Ui64slice []uint64
 	Ui8slice  []uint8
 	Bslice    []bool
 	Byslice   []byte
+
+	BytesSlice [][]byte
 
 	Iptrslice []*int64
 
 	WrapSliceInt64  wrapSliceUint64
 	WrapSliceString wrapSliceString
 
-	Msi64 map[string]int64
+	Msint map[string]int
+
+	Msbytes map[string][]byte
 
 	Simplef testSimpleFields
 
 	SstrUi64T []stringUint64T
+	MstrUi64T map[string]*stringUint64T
 
 	AnonInTestStruc
 
 	NotAnon AnonInTestStruc
+
+	*AnonInTestStrucSlim
+	NotAnonSlim *AnonInTestStrucSlim
 
 	// R          Raw // Testing Raw must be explicitly turned on, so use standalone test
 	// Rext RawExt // Testing RawExt is tricky, so use standalone test
@@ -199,20 +219,33 @@ func populateTestStrucCommon(ts *TestStrucCommon, n int, bench, useInterface, us
 			math.MaxUint16, math.MaxUint16 + 4, math.MaxUint16 - 4,
 			math.MaxUint32, math.MaxUint32 + 4, math.MaxUint32 - 4,
 		},
-		AMSU16: map[string]uint16{strRpt(n, "1"): 1, strRpt(n, "22"): 2, strRpt(n, "333"): 3, strRpt(n, "4444"): 4},
+		AMSU64: map[string]uint64{
+			strRpt(n, "1"):    1,
+			strRpt(n, "22"):   2,
+			strRpt(n, "333"):  3,
+			strRpt(n, "4444"): 4,
+		},
+		AMSS: map[string]string{
+			strRpt(n, "1"):    strRpt(n, "1"),
+			strRpt(n, "22"):   strRpt(n, "22"),
+			strRpt(n, "333"):  strRpt(n, "333"),
+			strRpt(n, "4444"): strRpt(n, "4444"),
+		},
+
+		AI64arr8: [...]int64{1, 8, 2, 7, 3, 6, 4, 5},
 
 		// Note: +/- inf, NaN, and other non-representable numbers should not be explicitly tested here
 
 		AF64slice: []float64{
 			11.11e-11, -11.11e+11,
-			2.222E+12, -2.222E-12,
-			-555.55E-5, 555.55E+5,
-			666.66E-6, -666.66E+6,
-			7777.7777E-7, -7777.7777E-7,
-			-8888.8888E+8, 8888.8888E+8,
-			-99999.9999E+9, 99999.9999E+9,
+			2.222e+12, -2.222e-12,
+			-555.55e-5, 555.55e+5,
+			666.66e-6, -666.66e+6,
+			7777.7777e-7, -7777.7777e-7,
+			-8888.8888e+8, 8888.8888e+8,
+			-99999.9999e+9, 99999.9999e+9,
 			// these below are hairy enough to need strconv.ParseFloat
-			33.33E-33, -33.33E+33,
+			33.33e-33, -33.33e+33,
 			44.44e+44, -44.44e-44,
 			// standard ones
 			0, -1, 1,
@@ -221,25 +254,25 @@ func populateTestStrucCommon(ts *TestStrucCommon, n int, bench, useInterface, us
 			math.MaxFloat64, math.SmallestNonzeroFloat64,
 		},
 		AF32slice: []float32{
-			11.11e-11, -11.11e+11,
-			2.222E+12, -2.222E-12,
-			-555.55E-5, 555.55E+5,
-			666.66E-6, -666.66E+6,
-			7777.7777E-7, -7777.7777E-7,
-			-8888.8888E+8, 8888.8888E+8,
-			-99999.9999E+9, 99999.9999E+9,
+			11.11e-1, -11.11e+1,
+			2.222e+2, -2.222e-2,
+			-55.55e-5, 55.55e+5,
+			66.66e-6, -66.66e+6,
+			777.777e-7, -777.777e-7,
+			-8.88e+8, 8.88e-8,
+			-99999.9999e+9, 99999.9999e+9,
 			// these below are hairy enough to need strconv.ParseFloat
-			33.33E-33, -33.33E+33,
+			33.33e-33, -33.33e+33,
 			// standard ones
 			0, -1, 1,
 			// math.Float32frombits(0x7FF00000), math.Float32frombits(0xFFF00000), //+inf and -inf
 			math.MaxFloat32, math.SmallestNonzeroFloat32,
 		},
 
-		A164slice0:  []int64{},
+		AI64slice0:  []int64{},
 		AUi64sliceN: nil,
-		AMSU16N:     nil,
-		AMSU16E:     map[string]uint16{},
+		AMSU64N:     nil,
+		AMSU64E:     map[string]uint64{},
 	}
 
 	if !bench {
@@ -271,34 +304,34 @@ func populateTestStrucCommon(ts *TestStrucCommon, n int, bench, useInterface, us
 
 		Sslice:    []string{strRpt(n, "one"), strRpt(n, "two"), strRpt(n, "three")},
 		I64slice:  []int64{1111, 2222, 3333},
-		I16slice:  []int16{44, 55, 66},
+		I32slice:  []int32{44, 55, 66},
 		Ui64slice: []uint64{12121212, 34343434, 56565656},
 		Ui8slice:  []uint8{210, 211, 212},
 		Bslice:    []bool{true, false, true, false},
 		Byslice:   []byte{13, 14, 15},
-
-		Msi64: map[string]int64{
+		BytesSlice: [][]byte{
+			[]byte(strRpt(n, "one")),
+			[]byte(strRpt(n, "two")),
+			[]byte(strRpt(n, "\"three\"")),
+		},
+		Msint: map[string]int{
 			strRpt(n, "one"):       1,
 			strRpt(n, "two"):       2,
 			strRpt(n, "\"three\""): 3,
 		},
-
+		Msbytes: map[string][]byte{
+			strRpt(n, "one"):       []byte(strRpt(n, "one")),
+			strRpt(n, "two"):       []byte(strRpt(n, "two")),
+			strRpt(n, "\"three\""): []byte(strRpt(n, "\"three\"")),
+		},
 		WrapSliceInt64:  []uint64{4, 16, 64, 256},
 		WrapSliceString: []string{strRpt(n, "4"), strRpt(n, "16"), strRpt(n, "64"), strRpt(n, "256")},
 
 		// R: Raw([]byte("goodbye")),
-		// Rext: RawExt{ 120, []byte("hello"), }, // TODO: don't set this - it's hard to test
-
-		// DecodeNaked bombs here, because the stringUint64T is decoded as a map,
-		// and a map cannot be the key type of a map.
-		// Thus, don't initialize this here.
-		// Msu2wss: map[stringUint64T]wrapStringSlice{
-		// 	{"5", 5}: []wrapString{"1", "2", "3", "4", "5"},
-		// 	{"3", 3}: []wrapString{"1", "2", "3"},
-		// },
+		// Rext: RawExt{ 120, []byte("hello"), }, // MARKER: don't set this - it's hard to test
 
 		// make Simplef same as top-level
-		// TODO: should this have slightly different values???
+		// MARKER: should this have slightly different values???
 		Simplef: testSimpleFields{
 			S: strRpt(n, `some really really cool names that are nigerian and american like "ugorji melody nwoke" - get it? `),
 
@@ -315,12 +348,12 @@ func populateTestStrucCommon(ts *TestStrucCommon, n int, bench, useInterface, us
 			B: true,
 
 			Sslice:    []string{strRpt(n, "one"), strRpt(n, "two"), strRpt(n, "three")},
-			I16slice:  []int16{44, 55, 66},
+			I32slice:  []int32{44, 55, 66},
 			Ui64slice: []uint64{12121212, 34343434, 56565656},
 			Ui8slice:  []uint8{210, 211, 212},
 			Bslice:    []bool{true, false, true, false},
 
-			Msi64: map[string]int64{
+			Msint: map[string]int{
 				strRpt(n, "one"):       1,
 				strRpt(n, "two"):       2,
 				strRpt(n, "\"three\""): 3,
@@ -330,9 +363,16 @@ func populateTestStrucCommon(ts *TestStrucCommon, n int, bench, useInterface, us
 			WrapSliceString: []string{strRpt(n, "4"), strRpt(n, "16"), strRpt(n, "64"), strRpt(n, "256")},
 		},
 
-		SstrUi64T:       []stringUint64T{{"1", 1}, {"2", 2}, {"3", 3}, {"4", 4}},
+		SstrUi64T:       make([]stringUint64T, numStrUi64T), // {{"1", 1}, {"2", 2}, {"3", 3}, {"4", 4}},
+		MstrUi64T:       make(map[string]*stringUint64T, numStrUi64T),
 		AnonInTestStruc: a,
 		NotAnon:         a,
+	}
+
+	for i := uint64(0); i < numStrUi64T; i++ {
+		ss := strings.Repeat(strconv.FormatUint(i, 10), int(i)) // 4)
+		ts.SstrUi64T[i] = stringUint64T{S: ss, U: i}
+		ts.MstrUi64T[ss] = &ts.SstrUi64T[i]
 	}
 
 	if bench {
