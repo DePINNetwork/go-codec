@@ -1,0 +1,1 @@
+codec/goversion_vendor_gte_go17.go

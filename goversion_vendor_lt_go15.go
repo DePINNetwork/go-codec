@@ -1,0 +1,1 @@
+codec/goversion_vendor_lt_go15.go

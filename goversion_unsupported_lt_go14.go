@@ -1,0 +1,1 @@
+codec/goversion_unsupported_lt_go14.go

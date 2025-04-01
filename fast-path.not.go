@@ -1,0 +1,1 @@
+codec/fast-path.not.go

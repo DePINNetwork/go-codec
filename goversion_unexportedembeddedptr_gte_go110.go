@@ -1,0 +1,1 @@
+codec/goversion_unexportedembeddedptr_gte_go110.go

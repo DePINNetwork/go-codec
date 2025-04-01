@@ -1,0 +1,1 @@
+codec/goversion_vendor_eq_go15.go
